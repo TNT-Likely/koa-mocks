@@ -1,0 +1,15 @@
+{
+  "name": "koa-mocks",
+  "version": "0.1.0",
+  "description": "koa2 mock middleware",
+  "main": "index.js",
+  "repository": "git@github.com:TNT-Likely/koa-mocks.git",
+  "author": "likely <532837139@qq.com>",
+  "license": "MIT",
+  "dependencies": {
+    "path-to-regexp": "^2.4.0"
+  },
+  "devDependencies": {
+    "koa": "^2.5.2"
+  }
+}
