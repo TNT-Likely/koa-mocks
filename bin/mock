@@ -1,44 +1,30 @@
-const express = require('express');
-const path = require('path');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
+#!/usr/bin/env node
 
-const webpack = require('webpack');
-const webpackDevMiddleware = require('webpack-dev-middleware');
-const webpackHotMiddleware = require('webpack-hot-middleware');
-const openBrowser = require('react-dev-utils/openBrowser');
+var program = require('commander')
+var path = require('path')
+var fs = require('fs')
+var fse = require('fs-extra')
+ 
+program
+  .version(require('../package.json').version, '-v --version')
+  .usage('<command> [options]')
 
-const config = require('./config');
-const utils = require('./build/utils');
-const devConfig = require('./build/webpack.dev.conf');
-const compiler = webpack(devConfig);
+program
+  .command('init [dir]')
+  .description('init mock dir')
+  .action(copy)
 
-const app = express();
+program
+  .parse(process.argv)
 
-app.use(webpackDevMiddleware(compiler, {
-  publicPath: devConfig.output.publicPath,
-  stats: 'errors-only',
-  headers: {
-    'Access-Control-Allow-Origin': '*'
-  }
-}));
-app.use(webpackHotMiddleware(compiler));
+function copy(dir) {
+  let target = process.cwd()
+  let source = path.resolve(__dirname, '../demo/mocks')
+  target = path.resolve(target, dir || './mocks')
 
-app.use(express.static('./'));
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, './dist/html/'));
-app.engine('ejs', require('ejs').__express);
-app.engine('html', require('ejs').__express);
-
-require('./mock/router')(app);
-
-console.log(`<http://${utils.getIPAdress()}:${config.dev.port}> with Chrome`);
-
-openBrowser(`http://${utils.getIPAdress()}:${config.dev.port}`);
-
-module.exports = app;
+  fse.copy(source, target).then(function(){
+    console.log('init success!')
+  }).catch(function(){
+    console.error('init error!')
+  })
+}
