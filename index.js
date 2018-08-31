@@ -1,6 +1,6 @@
 const path = require('path')
 const fs = require('fs')
-// const httpProxy = require('http-proxy')
+const httpProxy = require('http-proxy')
 const Router = require('./lib/router')
 const { merge, requireNoCache } = require('./lib/util')
 
@@ -71,12 +71,19 @@ let mock = function(opts) {
       ctx.type = extname
       ctx.body = fs.createReadStream(filePath)
     } else if (type === 'url') {
-      // proxy = httpProxy.createProxyServer({})
-      // await new Promise(function(resolve, reject) {
-      //   proxy.web(ctx.request, ctx.response, { target: file }, function(){
-      //   	resolve()
-      //   })
-      // })
+      proxy = httpProxy.createProxyServer()
+      return new Promise(function(resolve, reject) {
+        proxy.web(ctx.req, ctx.res, { 
+	      	target: file,
+	      	changeOrigin: true,
+	      	secure: false,
+	      	headers: {
+	      		'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
+	      	}
+	      }, function() {
+	      	resolve()
+	      })
+      })
     } else {
       ctx.body = `当前类型${type}暂不支持`
     }

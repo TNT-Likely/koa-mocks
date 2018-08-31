@@ -2,6 +2,18 @@
 
 koa的mock中间件
 
+## 安装
+
+```bash
+yarn add koa-mocks
+```
+
+## 初始化
+
+```bash
+node_modules/.bin/mock init
+```
+
 ## 使用
 
 ```javascipt
