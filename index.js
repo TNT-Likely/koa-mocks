@@ -16,6 +16,7 @@ let mock = function(opts) {
   let router = new Router(opts.routeFile)
 
   return async function(ctx, next) {
+    ctx.utils = require('./lib/util')
     let { request } = ctx
     let { method } = request
     let match = router.search(request.path, method)
@@ -38,7 +39,7 @@ let mock = function(opts) {
       }
 
       if (extname === '.js') {
-        data = requireNoCache(filePath)(ctx.request)
+        data = requireNoCache(filePath)(ctx.request, ctx.utils)
       } else if (extname === '.json') {
         data = requireNoCache(filePath)
       } else {

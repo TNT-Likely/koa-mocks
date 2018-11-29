@@ -54,6 +54,20 @@ module.exports = {
 	- file 文件
 	- url 网页
 
+## test.js 说明
+
+```
+module.exports = function(req, utils) {
+  return {
+    "data": utils.random([111,222,333])
+  }
+}
+```
+- req 请求request对象
+- utils 工具类
+  - utils.random(<array>) 数组中随机取一个数据 
+
+
 ## test.json 说明
 
 ```

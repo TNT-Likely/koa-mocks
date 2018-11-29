@@ -1,5 +1,5 @@
-module.exports = function(res) {
+module.exports = function(req, utils) {
   return {
-    "data": "111"
+    "data": utils.random([111,222,333])
   }
 }
