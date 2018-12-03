@@ -1,6 +1,8 @@
 const path = require('path')
 const fs = require('fs')
 const httpProxy = require('http-proxy')
+const buddy = require('co-body')
+const forms = require('formidable')
 const Router = require('./lib/router')
 const { merge, requireNoCache } = require('./lib/util')
 
@@ -26,6 +28,18 @@ let mock = function(opts) {
       return next()
     }
 
+    let body = null
+    if (ctx.is('json')) {
+      body = await buddy.json(ctx)
+    } else if(ctx.is('urlencoded')) {
+      body = await buddy.form(ctx)
+    } else if(ctx.is('text')) {
+      body = await buddy.text(ctx)
+    } else if(ctx.is('multipart')) {
+      body = await formy(ctx)
+    }
+
+
     let { type, file } = match
     let filePath = path.resolve(opts.staticFolder, file)
     let extname = path.extname(filePath)
@@ -39,6 +53,7 @@ let mock = function(opts) {
       }
 
       if (extname === '.js') {
+        ctx.request.body = body
         data = requireNoCache(filePath)(ctx.request, ctx.utils)
       } else if (extname === '.json') {
         data = requireNoCache(filePath)
@@ -91,6 +106,46 @@ let mock = function(opts) {
 
     await next()
   }
+}
+
+let formy = (ctx, opts) => {
+  return new Promise(function (resolve, reject) {
+    var fields = {}
+    var files = {}
+    var form = new forms.IncomingForm(opts)
+    form.on('end', function () {
+      return resolve({
+        fields: fields,
+        files: files
+      })
+    }).on('error', function (err) {
+      return reject(err)
+    }).on('field', function (field, value) {
+      if (fields[field]) {
+        if (Array.isArray(fields[field])) {
+          fields[field].push(value)
+        } else {
+          fields[field] = [fields[field], value]
+        }
+      } else {
+        fields[field] = value
+      }
+    }).on('file', function (field, file) {
+      if (files[field]) {
+        if (Array.isArray(files[field])) {
+          files[field].push(file)
+        } else {
+          files[field] = [files[field], file]
+        }
+      } else {
+        files[field] = file
+      }
+    })
+    if (opts.onFileBegin) {
+      form.on('fileBegin', opts.onFileBegin)
+    }
+    form.parse(ctx.req)
+  })
 }
 
 module.exports = mock
