@@ -18,8 +18,7 @@ let mock = function(opts) {
   let router = new Router(opts.routeFile)
 
   return async function(ctx, next) {
-    ctx.utils = require('./lib/util')
-    let { request } = ctx
+    let { request, response, req, res } = ctx
     let { method } = request
     let match = router.search(request.path, method)
 
@@ -29,14 +28,14 @@ let mock = function(opts) {
     }
 
     let body = null
-    if (ctx.is('json')) {
-      body = await buddy.json(ctx)
-    } else if(ctx.is('urlencoded')) {
-      body = await buddy.form(ctx)
-    } else if(ctx.is('text')) {
-      body = await buddy.text(ctx)
-    } else if(ctx.is('multipart')) {
-      body = await formy(ctx)
+    if (request.is('json')) {
+      body = await buddy.json(req)
+    } else if(request.is('urlencoded')) {
+      body = await buddy.form(req)
+    } else if(request.is('text')) {
+      body = await buddy.text(req)
+    } else if(request.is('multipart')) {
+      body = await formy(req)
     }
 
 
@@ -45,20 +44,20 @@ let mock = function(opts) {
     let extname = path.extname(filePath)
     let data = null
     if (type === 'mock') {
-      ctx.set('Access-Control-Allow-Origin', '*')
-      ctx.set('Access-Control-Allow-Methods', '*')
+      response.set('Access-Control-Allow-Origin', '*')
+      response.set('Access-Control-Allow-Methods', '*')
 
       if (!fs.existsSync(filePath)) {
-        ctx.body = `找不到mock文件${filePath}`
+        response.body = `找不到mock文件${filePath}`
       }
 
       if (extname === '.js') {
-        ctx.request.body = body
-        data = requireNoCache(filePath)(ctx.request, ctx.utils)
+        request.body = body
+        data = requireNoCache(filePath)(request, require('./lib/util'))
       } else if (extname === '.json') {
         data = requireNoCache(filePath)
       } else {
-        ctx.body = `mock文件格式错误`
+        response.body = `mock文件格式错误`
       }
 
       // 自定义状态码功能
@@ -67,7 +66,7 @@ let mock = function(opts) {
         statusCode = data.$$statusCode
         delete data['$$statusCode']
       }
-      ctx.status = statusCode
+      response.status = statusCode
 
       // 自定义延时功能
       let delay = 0
@@ -82,14 +81,14 @@ let mock = function(opts) {
         }, delay)
       })
 
-      ctx.body = data
+      response.body = data
     } else if (type === 'file') {
-      ctx.type = extname
-      ctx.body = fs.createReadStream(filePath)
+      response.type = extname
+      response.body = fs.createReadStream(filePath)
     } else if (type === 'url') {
       proxy = httpProxy.createProxyServer()
       return new Promise(function(resolve, reject) {
-        proxy.web(ctx.req, ctx.res, { 
+        proxy.web(req, res, { 
 	      	target: file,
 	      	changeOrigin: true,
 	      	secure: false,
@@ -101,14 +100,14 @@ let mock = function(opts) {
 	      })
       })
     } else {
-      ctx.body = `当前类型${type}暂不支持`
+      response.body = `当前类型${type}暂不支持`
     }
 
     await next()
   }
 }
 
-let formy = (ctx, opts) => {
+let formy = (req, opts) => {
   return new Promise(function (resolve, reject) {
     var fields = {}
     var files = {}
@@ -144,7 +143,7 @@ let formy = (ctx, opts) => {
     if (opts.onFileBegin) {
       form.on('fileBegin', opts.onFileBegin)
     }
-    form.parse(ctx.req)
+    form.parse(req)
   })
 }
 
