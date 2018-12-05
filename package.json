@@ -1,6 +1,6 @@
 {
   "name": "koa-mocks",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "koa2/express mock middleware",
   "main": "index.js",
   "repository": "git@github.com:TNT-Likely/koa-mocks.git",
