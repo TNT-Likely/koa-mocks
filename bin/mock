@@ -28,3 +28,7 @@ function copy(dir) {
     console.error('init error!')
   })
 }
+
+if (!program.args.length) {
+  program.outputHelp()
+}
