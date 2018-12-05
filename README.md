@@ -1,6 +1,6 @@
 # koa-mocks
 
-koa的mock中间件
+koa2/express mock middleware
 
 ## 安装
 
@@ -24,17 +24,19 @@ app.use(koaMocks(config))
 ## 参数说明
 
 - config.basePath `[string]` mock根目录
-	- 默认值 process.cwd()
+	- default process.cwd()
 - config.routeFile `[string]` mock路由文件
-	- 默认值 config.basePath + 'route.js'
+	- default config.basePath + 'route.js'
 - config.staticFolder `[string]` mock静态文件地址
-	- 默认值 config.basePath + 'static'
+	- default config.basePath + 'static'
+- config.express `[boolean]` 是否为express
+	- default false
 
 ## route.js 说明
 
 示例
 
-`[method]::[url] : [type]::[file]`
+`[method]::<url> : <type>::<file>`
 
 ```
 module.exports = {
@@ -47,7 +49,7 @@ module.exports = {
 
 参数说明
 
-- method 默认 get 支持任何方法和all
+- method default get support any method and all
 - url mock的地址
 - type mock对应类型
 	- mock 数据

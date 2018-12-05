@@ -4,9 +4,9 @@ const httpProxy = require('http-proxy')
 const buddy = require('co-body')
 const forms = require('formidable')
 const Router = require('./lib/router')
-const { merge, requireNoCache } = require('./lib/util')
+const { merge, requireNoCache, streamToBuffer } = require('./lib/util')
 
-let mock = function(opts) {
+let mock = function (opts) {
   opts = merge({
     basePath: path.resolve(process.cwd(), './mocks'),
     routeFile: './route.js',
@@ -15,9 +15,11 @@ let mock = function(opts) {
 
   opts.routeFile = path.resolve(opts.basePath, opts.routeFile)
   opts.staticFolder = path.resolve(opts.basePath, opts.staticFolder)
-  let router = new Router(opts.routeFile)
+  const router = new Router(opts.routeFile)
+  const isExpress = opts.express
 
-  return async function(ctx, next) {
+  const middleware = async function () {
+    const { ctx, next } = this
     let { request, response, req, res } = ctx
     let { method } = request
     let match = router.search(request.path, method)
@@ -30,14 +32,13 @@ let mock = function(opts) {
     let body = null
     if (request.is('json')) {
       body = await buddy.json(req)
-    } else if(request.is('urlencoded')) {
+    } else if (request.is('urlencoded')) {
       body = await buddy.form(req)
-    } else if(request.is('text')) {
+    } else if (request.is('text')) {
       body = await buddy.text(req)
-    } else if(request.is('multipart')) {
+    } else if (request.is('multipart')) {
       body = await formy(req)
     }
-
 
     let { type, file } = match
     let filePath = path.resolve(opts.staticFolder, file)
@@ -84,20 +85,20 @@ let mock = function(opts) {
       response.body = data
     } else if (type === 'file') {
       response.type = extname
-      response.body = fs.createReadStream(filePath)
+      response.body = await streamToBuffer(fs.createReadStream(filePath))
     } else if (type === 'url') {
       proxy = httpProxy.createProxyServer()
-      return new Promise(function(resolve, reject) {
-        proxy.web(req, res, { 
-	      	target: file,
-	      	changeOrigin: true,
-	      	secure: false,
-	      	headers: {
-	      		'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
-	      	}
-	      }, function() {
-	      	resolve()
-	      })
+      return new Promise(function (resolve, reject) {
+        proxy.web(req, res, {
+          target: file,
+          changeOrigin: true,
+          secure: false,
+          headers: {
+            'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
+          }
+        }, function () {
+          resolve()
+        })
       })
     } else {
       response.body = `当前类型${type}暂不支持`
@@ -105,7 +106,51 @@ let mock = function(opts) {
 
     await next()
   }
+
+  if (isExpress) {
+    return async (request, response, next) => {
+      // koa 'response.body =' to express 'response.send'
+      Object.defineProperty(response, 'body', {
+        set(value) {
+          response.send(value)
+        }
+      })
+
+      const type = response.type.bind(response)
+      // koa 'response.type' = to exporess 'response.type()'
+      Object.defineProperty(response, 'type', {
+        set(value) {
+          type(value)
+        }
+      })
+
+      // koa 'response.status' = to exporess 'response.status()'
+      Object.defineProperty(response, 'status', {
+        set(value) {
+          response.statusCode = value
+        }
+      })
+
+      const obj = {
+        ctx: {
+          request,
+          response,
+          req: request,
+          res: response
+        },
+        next
+      }
+      return middleware.call(obj)
+    }
+  } else {
+    return async (ctx, next) => {
+      const obj = { ctx, next }
+      return middleware.call(obj)
+    }
+  }
 }
+
+
 
 let formy = (req, opts) => {
   return new Promise(function (resolve, reject) {
