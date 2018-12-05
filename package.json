@@ -23,6 +23,7 @@
     "path-to-regexp": "^2.4.0"
   },
   "devDependencies": {
+    "express": "^4.16.4",
     "koa": "^2.5.2"
   }
 }
