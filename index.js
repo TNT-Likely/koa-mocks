@@ -25,7 +25,7 @@ let mock = function (opts) {
       })
 
       const type = response.type.bind(response)
-      const status = response.type.bind(status)
+      const status = response.status.bind(response)
       // koa 'response.type' = to exporess 'response.type()'
       Object.defineProperty(response, 'type', {
         set(value) {

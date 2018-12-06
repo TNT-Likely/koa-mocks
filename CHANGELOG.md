@@ -3,3 +3,5 @@
 
 ## 0.5.1
   - fixed express bug
+## 0.5.3
+  - fixed support express bug
