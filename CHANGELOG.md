@@ -8,3 +8,6 @@
 
 ## 0.6.0
   - support res
+
+## 0.6.1
+  - fix proxy bug
